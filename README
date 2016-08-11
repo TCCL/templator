@@ -1,0 +1,12 @@
+templator - version 0.0.0
+--------------------------------------------------------------------------------
+This repository provides a simple PHP code library for generating pages from
+template files.
+
+Primary authors:
+    Roger Gee <roger.gee@tulsalibrary.org>
+
+Other authors:
+
+--------------------------------------------------------------------------------
+Dependencies:
