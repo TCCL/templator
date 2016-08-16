@@ -69,6 +69,13 @@ class TemplateGenerator implements Templator {
     private $cache;
 
     /**
+     * A parent Templator.
+     *
+     * @var Templator
+     */
+    private $parent;
+
+    /**
      * An associative array of variables that are exported into every TemplateGenerator
      * instance.
      *
@@ -153,6 +160,7 @@ class TemplateGenerator implements Templator {
         // place a well-defined ordering on the order of evaluation to prevent
         // undefined-behavior on any operations that have side-effects.
         $this->components[$name] = $component;
+        $component->parent = $this;
         $component->evaluate();
     }
 
@@ -210,7 +218,6 @@ class TemplateGenerator implements Templator {
      * Implements Templator::generate()
      */
     public function generate() {
-        error_log("g");
         echo $this->evaluate();
     }
 }
@@ -220,14 +227,19 @@ class TemplateGenerator implements Templator {
  */
 class PageGenerator extends TemplateGenerator {
     /**
-     * An array of CSS stylesheets to add to the page.
+     * An array of CSS stylesheets to add to the page. This array will be
+     * reversed due to how the templates are evaluated. This is because we want
+     * inner content to specify content first but be ordered later.
      *
      * @var array
      */
     private $css = array();
 
     /**
-     * An array of JavaScript files to add to the page.
+     * An array of JavaScript files to add to the page. This array will be
+     * reversed due to how the templates are evaluated. This is because we want
+     * inner content to specify content first but be ordered later.
+     *
      * @var array
      */
     private $js = array();
@@ -256,7 +268,7 @@ class PageGenerator extends TemplateGenerator {
      * Writes the CSS references to the output stream in-place.
      */
     public function generateCSS() {
-        foreach ($this->css as $filePath) {
+        foreach (array_reverse($this->css) as $filePath) {
             echo "<link rel=\"stylesheet\" href=\"$filePath\" />\n";
         }
     }
@@ -265,7 +277,7 @@ class PageGenerator extends TemplateGenerator {
      * Writes the JS references to the output stream in-place.
      */
     public function generateJavaScript() {
-        foreach ($this->js as $filePath) {
+        foreach (array_reverse($this->js) as $filePath) {
             echo "<script src=\"$filePath\"></script>\n";
         }
     }
