@@ -1,4 +1,4 @@
-templator - version 0.0.0
+templator - version 0.1.0
 --------------------------------------------------------------------------------
 This repository provides a simple PHP code library for generating pages from
 template files.
@@ -10,3 +10,7 @@ Other authors:
 
 --------------------------------------------------------------------------------
 Dependencies:
+
+    n/a
+
+--------------------------------------------------------------------------------
