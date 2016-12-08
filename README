@@ -1,7 +1,7 @@
 templator - version 0.1.0
 --------------------------------------------------------------------------------
 This repository provides a simple PHP code library for generating pages from
-template files.
+PHP template files.
 
 Primary authors:
     Roger Gee <roger.gee@tulsalibrary.org>
@@ -14,3 +14,7 @@ Dependencies:
     n/a
 
 --------------------------------------------------------------------------------
+Installation:
+
+To install, copy the files under lib/ to your include/autoload path. You can
+then include the files or import them with an autoloader.

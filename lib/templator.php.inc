@@ -16,23 +16,24 @@ interface Templator {
      * Evaluates the content of the template page and returns it as a string
      *
      * @return string
-     *
      */
     public function evaluate();
 
     /**
-     * Writes the evaluate content to the output stream (this does what evaluate()
-     * does except it echos it to the output stream instead of returning it)
+     * Writes the evaluate content to the output stream (this does what
+     * evaluate() does except it echos it to the output stream instead of
+     * returning it).
      */
     public function generate();
 }
 
 /**
- * Represents a generic template page generator.
+ * Represents a generic template generator that targets an arbitrary template
+ * script.
  */
 class TemplateGenerator implements Templator {
     /**
-     * The path to the template file that represents the base page
+     * The path to the script file that represents the base template.
      *
      * @var string
      */
@@ -69,15 +70,15 @@ class TemplateGenerator implements Templator {
     private $cache;
 
     /**
-     * A parent Templator.
+     * An optional parent Templator object to be used by template scripts.
      *
      * @var Templator
      */
     private $parent;
 
     /**
-     * An associative array of variables that are exported into every TemplateGenerator
-     * instance.
+     * An associative array of variables that are exported into every
+     * TemplateGenerator instance.
      *
      * @var array
      */
@@ -111,8 +112,8 @@ class TemplateGenerator implements Templator {
     }
 
     /**
-     * Adds a list of named variables into the list of varibles. These variables
-     * will be added
+     * Adds a list of named variables into the list of variables to import into
+     * the template script.
      *
      * @param array $vars
      *  An associative array of name/value pairs that represents the variables
@@ -155,10 +156,11 @@ class TemplateGenerator implements Templator {
      */
     public function addComponent($name,Templator $component) {
         // Go ahead and evaluate the component. This is a depth-first evaluation
-        // technique that ensures we that a component is completely evaluated
+        // technique that ensures that a component is completely evaluated
         // before the context in which it is used is even considered. This is to
-        // place a well-defined ordering on the order of evaluation to prevent
+        // place a well-defined ordering on template evaluation which prevents
         // undefined-behavior on any operations that have side-effects.
+
         $this->components[$name] = $component;
         $component->parent = $this;
         $component->evaluate();
@@ -166,7 +168,8 @@ class TemplateGenerator implements Templator {
 
     /**
      * Generate a named component previously specified by a call to
-     * addComponent(). The content is written to the output stream.
+     * addComponent(). The content is written to the output stream. This
+     * function should be called within template scripts to inject components.
      *
      * @param  string $name
      *  The name of the component to generate
@@ -195,11 +198,12 @@ class TemplateGenerator implements Templator {
     public function evaluate() {
         if (is_null($this->cache)) {
             // Export any variables to make them available to the template page.
+            // The $this variable will also be available.
             extract($this->vars);
             extract(self::$defaultVars);
 
-            // Include the target template page so that PHP evaluates it. Capture
-            // the output in a PHP output buffer.
+            // Include the target template page so that PHP evaluates it.
+            // Capture the output in a PHP output buffer.
             ob_start();
             include $this->basePage;
             $output = ob_get_clean();
@@ -215,7 +219,7 @@ class TemplateGenerator implements Templator {
     }
 
     /**
-     * Implements Templator::generate()
+     * Implements Templator::generate().
      */
     public function generate() {
         echo $this->evaluate();
@@ -223,13 +227,20 @@ class TemplateGenerator implements Templator {
 }
 
 /**
- * A specific template generator for generating a top-level HTML page.
+ * A specific template generator with convenience functions for generating a
+ * top-level HTML page. This templator lets you add stylesheet and script
+ * references to the template.
+ *
+ * References are specified in reverse order since nested scripts can
+ * recursively add references that depend on references added in a base
+ * template. This means independent references should be specified after
+ * dependent ones.
  */
 class PageGenerator extends TemplateGenerator {
     /**
      * An array of CSS stylesheets to add to the page. This array will be
      * reversed due to how the templates are evaluated. This is because we want
-     * inner content to specify content first but be ordered later.
+     * inner content to specify references first but be ordered later.
      *
      * @var array
      */
@@ -238,7 +249,7 @@ class PageGenerator extends TemplateGenerator {
     /**
      * An array of JavaScript files to add to the page. This array will be
      * reversed due to how the templates are evaluated. This is because we want
-     * inner content to specify content first but be ordered later.
+     * inner content to specify references first but be evaluated later.
      *
      * @var array
      */
@@ -265,7 +276,7 @@ class PageGenerator extends TemplateGenerator {
     }
 
     /**
-     * Writes the CSS references to the output stream in-place.
+     * Writes the CSS references in-place to the output stream.
      */
     public function generateCSS() {
         foreach (array_reverse($this->css) as $filePath) {
@@ -274,7 +285,7 @@ class PageGenerator extends TemplateGenerator {
     }
 
     /**
-     * Writes the JS references to the output stream in-place.
+     * Writes the JS references in-place to the output stream.
      */
     public function generateJavaScript() {
         foreach (array_reverse($this->js) as $filePath) {
