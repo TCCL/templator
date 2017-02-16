@@ -270,7 +270,8 @@ class PageGenerator extends TemplateGenerator {
     private $js = array();
 
     /**
-     * Add a stylesheet to the page.
+     * Add a stylesheet to the generator's list of stylesheets. This just saves
+     * the reference to be written at a later time.
      *
      * @param string $filePath
      *  The path to the CSS file
@@ -285,7 +286,8 @@ class PageGenerator extends TemplateGenerator {
     }
 
     /**
-     * Add a JavaScript file to the page.
+     * Add a JavaScript file to the generator's list of JavaScript
+     * references. This just saves the reference to be written at a later time.
      *
      * @param string $filePath
      *  The path to the JavaScript file
@@ -304,7 +306,7 @@ class PageGenerator extends TemplateGenerator {
      */
     public function generateCSS() {
         foreach (array_reverse($this->css) as $filePath) {
-            echo "<link rel=\"stylesheet\" href=\"$filePath\" />\n";
+            $this->css($filePath);
         }
     }
 
@@ -313,12 +315,13 @@ class PageGenerator extends TemplateGenerator {
      */
     public function generateJavaScript() {
         foreach (array_reverse($this->js) as $filePath) {
-            echo "<script src=\"$filePath\"></script>\n";
+            $this->js($filePath);
         }
     }
 
     /**
-     * Directly writes the specified JS reference in-place to the output stream.
+     * Directly writes the specified JS reference in-place to the output
+     * stream. The reference may be modified if caching is enabled.
      *
      * @param string $filePath
      *  The reference as it will be presented to the user-agent in the HTML
@@ -332,7 +335,8 @@ class PageGenerator extends TemplateGenerator {
     }
 
     /**
-     * Directly writes the specified JS reference in-place to the output stream.
+     * Directly writes the specified JS reference in-place to the output
+     * stream. The reference may be modified if caching is enabled.
      *
      * @param string $filePath
      *  The reference as it will be presented to the user-agent in the HTML
