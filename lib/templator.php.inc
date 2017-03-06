@@ -27,6 +27,12 @@ interface Templator {
      * returning it).
      */
     public function generate();
+
+    /**
+     * Allow child templates to perform tasks with awareness of their parent
+     * templators.
+     */
+    public function inherit(Templator $parent);
 }
 
 /**
@@ -164,7 +170,7 @@ class TemplateGenerator implements Templator {
         // undefined-behavior on any operations that have side-effects.
 
         $this->components[$name] = $component;
-        $component->parent = $this;
+        $component->inherit($this);
         $component->evaluate();
     }
 
@@ -225,6 +231,18 @@ class TemplateGenerator implements Templator {
      */
     public function generate() {
         echo $this->evaluate();
+    }
+
+    /**
+     * Implements Templator::inherit().
+     */
+    public function inherit(Templator $parent) {
+        $this->parent = $parent;
+
+        // Inherit variables from parent TemplateGenerator.
+        if (is_a($parent,'TemplateGenerator')) {
+            $this->addVariables($parent->vars);
+        }
     }
 }
 
