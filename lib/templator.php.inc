@@ -277,12 +277,7 @@ class PageGenerator extends TemplateGenerator {
      *  The path to the CSS file
      */
     public function addStylesheet($filePath) {
-        if (is_object(self::$cache)) {
-            $this->css[] = self::$cache->convertToCache($filePath,'css');
-        }
-        else {
-            $this->css[] = $filePath;
-        }
+        $this->css[] = $filePath;
     }
 
     /**
@@ -293,12 +288,7 @@ class PageGenerator extends TemplateGenerator {
      *  The path to the JavaScript file
      */
     public function addJavaScript($filePath) {
-        if (is_object(self::$cache)) {
-            $this->js[] = self::convertToCache($filePath,'js');
-        }
-        else {
-            $this->js[] = $filePath;
-        }
+        $this->js[] = $filePath;
     }
 
     /**
