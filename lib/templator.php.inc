@@ -200,6 +200,21 @@ class TemplateGenerator implements Templator {
     }
 
     /**
+     * Creates a component directly and then generates it. The component will be
+     * an instance of TemplateGenerator.
+     *
+     * @param string $basePage
+     *  The file path for the template file
+     * @param bool $preeval
+     *  Determines if the templator is configured to pre-evaluate its content.
+     */
+    public function directComponent($basePage,$preeval = true) {
+        $component = new TemplateGenerator($basePage,$preeval);
+        $component->inherit($this);
+        $component->generate();
+    }
+
+    /**
      * Adds a callback function to the list of hooks.
      *
      * @param callable $callback
