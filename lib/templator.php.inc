@@ -85,6 +85,13 @@ class TemplateGenerator implements Templator {
     private $parent;
 
     /**
+     * Determines if the templator is configured to pre-evaluate its content.
+     *
+     * @var bool
+     */
+    private $preeval;
+
+    /**
      * An associative array of variables that are exported into every
      * TemplateGenerator instance.
      *
@@ -97,13 +104,16 @@ class TemplateGenerator implements Templator {
      *
      * @param string $basePage
      *  The file path of the page template file
+     * @param bool $preeval
+     *  Determines if the templator is configured to pre-evaluate its content.
      */
-    public function __construct($basePage) {
+    public function __construct($basePage,$preeval = true) {
         // Add .php.tpl extension if no extension was specified.
         if (!preg_match('/^[^\.]+\..+/',$basePage)) {
             $basePage .= ".php.tpl";
         }
         $this->basePage = $basePage;
+        $this->preeval = $preeval;
     }
 
     /**
@@ -186,7 +196,7 @@ class TemplateGenerator implements Templator {
         if (!isset($this->components[$name])) {
             throw new Exception(__METHOD__.": component '$name' does not exist");
         }
-        echo $this->components[$name]->evaluate();
+        $this->components[$name]->generate();
     }
 
     /**
@@ -204,6 +214,12 @@ class TemplateGenerator implements Templator {
      * Implements Templator::evaluate()
      */
     public function evaluate() {
+        // There is nothing to do if we are configured to write directly to the
+        // output stream.
+        if (!$this->preeval) {
+            return null;
+        }
+
         if (is_null($this->cache)) {
             // Export any variables to make them available to the template page.
             // The $this variable will also be available.
@@ -230,7 +246,14 @@ class TemplateGenerator implements Templator {
      * Implements Templator::generate().
      */
     public function generate() {
-        echo $this->evaluate();
+        if ($this->preeval) {
+            echo $this->evaluate();
+        }
+        else {
+            extract($this->vars);
+            extract(self::$defaultVars);
+            include $this->basePage;
+        }
     }
 
     /**
