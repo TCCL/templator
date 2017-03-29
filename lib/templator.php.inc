@@ -337,6 +337,13 @@ class PageGenerator extends TemplateGenerator {
     }
 
     /**
+     * Alias for PageGenerator::addStylesheet().
+     */
+    public function addCSS($filePath) {
+        $this->css[] = $filePath;
+    }
+
+    /**
      * Add a JavaScript file to the generator's list of JavaScript
      * references. This just saves the reference to be written at a later time.
      *
@@ -354,6 +361,13 @@ class PageGenerator extends TemplateGenerator {
         foreach (array_reverse($this->css) as $filePath) {
             $this->css($filePath);
         }
+    }
+
+    /**
+     * Alias for PageGenerator::generateCSS().
+     */
+    public function generateStylesheets() {
+        $this->generateCSS();
     }
 
     /**
