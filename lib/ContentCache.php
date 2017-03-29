@@ -1,12 +1,12 @@
 <?php
 
 /**
- * contentcache.php.inc
+ * ContentCache.php
  *
- * This file is a part of templator. You should not include this file
+ * This file is a part of tccl/templator. You should not include this file
  * directly. It contains functionality used by the templator implementation.
  *
- * @package templator
+ * @package tccl/templator
  */
 
 namespace TCCL\Templator;
