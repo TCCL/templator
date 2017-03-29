@@ -17,21 +17,23 @@ Dependencies:
 --------------------------------------------------------------------------------
 Installation:
 
-This library is available as a composer package. Require 'tccl/templator'.
+This library is available as a composer package. Require 'tccl/templator' in
+your composer.json file and then install.
 
 --------------------------------------------------------------------------------
 Usage:
 
 Templator loads php template files from the include path. First make sure your
-include path is available. Alternatively you can load templates relative to the
-script directory. Template scripts must have the suffix .php.tpl. If you do not
-specify the extension, the library will add it for you.
+include path is configured correctly. Alternatively you can load templates
+relative to the script directory. Template scripts must have the suffix
+.php.tpl. If you do not specify the extension, the library will add it for you.
 
 The base interface \TCCL\Templator\Templator defines the contract for
-templators. A basic templator has been provided via
-\TCCL\Templator\TemplateGenerator, and an extended version via
-\TCCL\Templator\PageGenerator. The 'TemplateGenerator' is a generic version and
-the 'PageGenerator' is a specialized version for top-level HTML pages.
+templators. The library provides a basic templator via the
+\TCCL\Templator\TemplateGenerator class and an extended version via the
+\TCCL\Templator\PageGenerator class. The 'TemplateGenerator' is a generic
+template generator and the 'PageGenerator' is a more specialized version for
+top-level HTML pages.
 
   Sample usage:
 
@@ -46,10 +48,18 @@ Templators of type TemplateGenerator are designed to have nested components
 of a method call, meaning the $this variable always refers to the templator
 instance.
 
-Also, the included templator implementations always preevaluate HTML in memory
-unless configured otherwise in the constructor. Preevaluation is sometimes
-necessary if you need side-effects to propogate to a parent templator; however
-it can also consume a lot of memory.
+TemplateGenerator instances also store lists of variables which are extracted
+into the scope of the template script execution. Variables should be added in
+your model via addVariable() or addVariables(). Variables are inherited from a
+parent templator to a child templator. Note that the variables are copied;
+therefore changes should not be propogated through variables unless they are
+objects. References will only propogate to the caller who added them to the
+templator.
+
+Also, the included templator implementations by default preevaluate HTML in
+memory unless configured otherwise in the constructor. Preevaluation is
+sometimes necessary if you need side-effects to propogate to a parent templator;
+however it can consume a lot of memory if you aren't careful.
 
   Example template script using PageGenerator methods:
 
@@ -65,7 +75,8 @@ it can also consume a lot of memory.
       </body>
     </html>
 
-  Sample code creating such a PageGenerator:
+  Sample code creating such a PageGenerator (the templators are configured to
+  avoid preevaluating HTML in memory):
 
     $page = new \TCCL\Templator\PageGenerator('index',false);
     $page->addVariable('title','The Site');
