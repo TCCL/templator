@@ -2,7 +2,7 @@
     "name": "tccl/templator",
     "autoload": {
         "psr-4": {
-            "TCCL\\Templator": "lib"
+            "TCCL\\Templator\\": "lib"
         }
     }
 }
