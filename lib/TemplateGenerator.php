@@ -255,7 +255,7 @@ class TemplateGenerator implements Templator {
         $this->parent = $parent;
 
         // Inherit variables from parent TemplateGenerator.
-        if (is_a($parent,'TemplateGenerator')) {
+        if (is_a($parent,'\TCCL\Templator\TemplateGenerator')) {
             $this->addVariables($parent->vars);
         }
     }
