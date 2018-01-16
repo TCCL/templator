@@ -13,8 +13,11 @@ namespace TCCL\Templator;
 use Exception;
 
 /**
+ * TemplateGenerator
+ *
  * Represents a generic template generator that targets an arbitrary template
- * script.
+ * script. This templator provides variables, HTML entity escaping, evaluation
+ * caching, output hooks and nested components.
  */
 class TemplateGenerator implements Templator {
     /**
@@ -31,6 +34,13 @@ class TemplateGenerator implements Templator {
      * @var array
      */
     private $vars = array();
+
+    /**
+     * A list of variable names that should not be escaped when output.
+     *
+     * @var array
+     */
+    private $noescape = array();
 
     /**
      * An associative array mapping component names to template generators.
@@ -84,7 +94,7 @@ class TemplateGenerator implements Templator {
      * @param bool $preeval
      *  Determines if the templator is configured to pre-evaluate its content.
      */
-    public function __construct($basePage,$preeval = true) {
+    public function __construct($basePage,$preeval = false) {
         // Add .php.tpl extension if no extension was specified.
         if (!preg_match('/^[^\.]+\..+/',$basePage)) {
             $basePage .= ".php.tpl";
@@ -101,9 +111,15 @@ class TemplateGenerator implements Templator {
      *  The name for the variable
      * @param mixed $value
      *  The value for the variable
+     * @param bool $escape
+     *  If true, then the named variable will be escaped.
      */
-    public function addVariable($name,$value) {
+    public function addVariable($name,$value,$escape = true) {
         $this->vars[$name] = $value;
+
+        if (!$escape) {
+            $this->noescape[$name] = true;
+        }
     }
 
     /**
@@ -112,9 +128,15 @@ class TemplateGenerator implements Templator {
      *
      * @param array $vars
      *  An associative array of name/value pairs that represents the variables
+     * @param bool $escape
+     *  If true, then the named variables will be escaped.
      */
-    public function addVariables(array $vars) {
+    public function addVariables(array $vars,$escape = true) {
         $this->vars += $vars;
+
+        if (!$escape) {
+            $this->noescape += array_fill_keys(array_keys($vars),true);
+        }
     }
 
     /**
@@ -203,6 +225,26 @@ class TemplateGenerator implements Templator {
     }
 
     /**
+     * Resets the templator back to its initial state with no variables,
+     * components or hooks. The evaluation cache is also cleared.
+     */
+    public function reset() {
+        $this->vars = [];
+        $this->noescape = [];
+        $this->hooks = [];
+        $this->components = [];
+        $this->clearCache();
+    }
+
+    /**
+     * Clears the template generator's evaluation cache, allowing for another
+     * full evaluation.
+     */
+    public function clearCache() {
+        unset($this->cache);
+    }
+
+    /**
      * Implements Templator::evaluate()
      */
     public function evaluate() {
@@ -212,16 +254,12 @@ class TemplateGenerator implements Templator {
             return null;
         }
 
-        if (is_null($this->cache)) {
-            // Export any variables to make them available to the template page.
-            // The $this variable will also be available.
-            extract($this->vars);
-            extract(self::$defaultVars);
-
-            // Include the target template page so that PHP evaluates it.
-            // Capture the output in a PHP output buffer.
+        if (!isset($this->cache)) {
+            // Set up output buffer.
             ob_start();
-            include $this->basePage;
+
+            // Generate output and capture to variable.
+            $this->outputPage();
             $output = ob_get_clean();
 
             // Pass the output through any processing hooks.
@@ -242,9 +280,7 @@ class TemplateGenerator implements Templator {
             echo $this->evaluate();
         }
         else {
-            extract($this->vars);
-            extract(self::$defaultVars);
-            include $this->basePage;
+            $this->outputPage();
         }
     }
 
@@ -258,5 +294,34 @@ class TemplateGenerator implements Templator {
         if (is_a($parent,'\TCCL\Templator\TemplateGenerator')) {
             $this->addVariables($parent->vars);
         }
+    }
+
+    private function escapeRecursive(&$bucket,$escape = null) {
+        foreach ($bucket as $name => &$value) {
+            // Only escape variables that were not excluded or whose parent
+            // variable was not excluded. In this way any variable that is
+            // excluded has its children excluded as well.
+            $doescape = isset($escape) ? $escape : !isset($this->noescape[$name]);
+
+            if (is_string($value) && $doescape) {
+                $value = htmlentities($value);
+            }
+            else if (is_array($value)) {
+                $this->escapeRecursive($value,$doescape);
+            }
+        }
+    }
+
+    private function outputPage() {
+        // Make array of variables to extract using per-template and default
+        // variables. Run every string variable through htmlentities()
+        // recursively.
+        $vars = $this->vars + self::$defaultVars;
+        $this->escapeRecursive($vars);
+
+        // Extract variables into the scope of this method call. Then include
+        // the template source code to generate output.
+        extract($vars);
+        include $this->basePage;
     }
 }

@@ -45,9 +45,9 @@ class ContentCache {
      * @param array $hooks
      *  A table mapping content identifiers to command-lines used to filter the
      *  content before it is cached. The following valid content types are
-     *  allowed:
-     *   - "js": JavaScript
-     *   - "css": Cascading Style Sheets
+     *  supported and are triggered by and match a file's extension:
+     *   - "js": JavaScript source files
+     *   - "css": Cascading Style Sheet files
      *  Each entry may map to a single command-line or an array of
      *  command-lines. In the case of the later, the commands will be executed
      *  in a pipeline in the standard way. The following special tokens are
@@ -81,7 +81,8 @@ class ContentCache {
      *  important so we can make consistent lookups).
      * @param string $type
      *  The type of content the file contains (so as to invoke the correct
-     *  hooks).
+     *  hooks). If left empty, then the file extension is used instead to
+     *  identify the file type.
      *
      * @return string
      *  The file path to the cached version.
