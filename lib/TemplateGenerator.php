@@ -43,6 +43,13 @@ class TemplateGenerator implements Templator {
     private $noescape = array();
 
     /**
+     * Flag whether we've escaped our local template variables or not.
+     *
+     * @var bool
+     */
+    private $escaped = false;
+
+    /**
      * An associative array mapping component names to template generators.
      *
      * @var array
@@ -79,13 +86,6 @@ class TemplateGenerator implements Templator {
     private $preeval;
 
     /**
-     * Determines if the templator is running in "dry-run" mode.
-     *
-     * @var bool
-     */
-    private $dryrun = false;
-
-    /**
      * An associative array of variables that are exported into every
      * TemplateGenerator instance.
      *
@@ -99,6 +99,13 @@ class TemplateGenerator implements Templator {
      * @var array
      */
     static private $defaultNoescape = array();
+
+    /**
+     * Flag whether global default variables have been escaped or not.
+     *
+     * @var bool
+     */
+    static private $defaultEscaped = false;
 
     /**
      * Constructs a new templator instance
@@ -194,12 +201,8 @@ class TemplateGenerator implements Templator {
      *  The name for the nested component
      * @param Templator $component
      *  The component object
-     * @param bool $dryrun
-     *  If true, then a dry-run is performed on the component after variables
-     *  have been inherited. This only works if the component is an instance of
-     *  type TemplateGenerator.
      */
-    public function addComponent($name,Templator $component,$dryrun = false) {
+    public function addComponent($name,Templator $component) {
         // Go ahead and evaluate the component. This is a depth-first evaluation
         // technique that ensures that a component is completely evaluated
         // before the context in which it is used is even considered. This is to
@@ -208,9 +211,8 @@ class TemplateGenerator implements Templator {
 
         $this->components[$name] = $component;
         $component->inherit($this);
-        $component->evaluate();
-        if ($dryrun && is_a($component,'\TCCL\Templator\TemplateGenerator')) {
-            $component->dryrun();
+        if ($this->preeval) {
+            $component->evaluate();
         }
     }
 
@@ -260,11 +262,28 @@ class TemplateGenerator implements Templator {
      * components or hooks. The evaluation cache is also cleared.
      */
     public function reset() {
-        $this->vars = [];
-        $this->noescape = [];
         $this->hooks = [];
         $this->components = [];
+        $this->resetVariables();
         $this->clearCache();
+    }
+
+    /**
+     * Resets the state of the templator's variable list.
+     */
+    public function resetVariables() {
+        $this->vars = [];
+        $this->noescape = [];
+        $this->escaped = false;
+    }
+
+    /**
+     * Resets the state of the default variable list.
+     */
+    public static function resetDefaultVariables() {
+        self::$defaultVariables = [];
+        self::$defaultNoescape = [];
+        self::$defaultEscaped = false;
     }
 
     /**
@@ -276,31 +295,11 @@ class TemplateGenerator implements Templator {
     }
 
     /**
-     * Executes the template in dry-run mode. In dry-run mode, the template
-     * script is loaded and executed but no variables are extracted. If you use
-     * dry-run, your scripts *should* check for $this->dryrun and exit with no
-     * output. A dry-run is like a preevaluation except no evaluation
-     * occurs. This is useful for configuring the backend specific to each
-     * template component.
-     */
-    public function dryrun() {
-        ob_start();
-        $this->dryrun = true;
-        include $this->basePage;
-        $this->dryrun = false;
-        ob_get_clean();
-    }
-
-    /**
      * Implements Templator::evaluate()
      */
     public function evaluate() {
-        // There is nothing to do if we are configured to write directly to the
-        // output stream.
-        if (!$this->preeval) {
-            return null;
-        }
-
+        // Cache the evaluation in case the template is instantiated multiple
+        // times.
         if (!isset($this->cache)) {
             // Set up output buffer.
             ob_start();
@@ -309,11 +308,13 @@ class TemplateGenerator implements Templator {
             $this->outputPage();
             $output = ob_get_clean();
 
-            // Pass the output through any processing hooks.
-            foreach ($this->hooks as $callback) {
-                $output = $callback($output);
+            if (!empty($output)) {
+                // Pass the output through any processing hooks.
+                foreach ($this->hooks as $callback) {
+                    $output = $callback($output);
+                }
+                $this->cache = $output;
             }
-            $this->cache = $output;
         }
 
         return $this->cache;
@@ -336,45 +337,55 @@ class TemplateGenerator implements Templator {
      */
     public function inherit(Templator $parent) {
         $this->parent = $parent;
-
-        // Inherit variables from parent TemplateGenerator.
-        if (is_a($parent,'\TCCL\Templator\TemplateGenerator')) {
-            $this->addVariables($parent->vars);
-        }
     }
 
-    private function escapeRecursive(&$bucket,$escape = null) {
+    private static function escape_recursive(array &$bucket,array $noescape,$escape = null) {
         foreach ($bucket as $name => &$value) {
             // Only escape variables that were not excluded or whose parent
             // variable was not excluded. In this way any variable that is
             // excluded has its children excluded as well.
-            if (!isset($escape)) {
-                $doescape = !isset($this->noescape[$name])
-                    && !isset(self::$defaultNoescape[$name]);
-            }
-            else {
-                $doescape = $escape;
-            }
+
+            $doescape = isset($escape) ? $escape : !isset($noescape[$name]);
 
             if (is_string($value) && $doescape) {
                 $value = htmlentities($value);
             }
             else if (is_array($value)) {
-                $this->escapeRecursive($value,$doescape);
+                self::escape_recursive($value,$noescape,$doescape);
             }
         }
     }
 
-    private function outputPage() {
-        // Make array of variables to extract using per-template and default
-        // variables. Run every string variable through htmlentities()
-        // recursively.
-        $vars = $this->vars + self::$defaultVars;
-        $this->escapeRecursive($vars);
+    private function getEscapedVariables() {
+        // Make sure variable lists have been escaped. This involves running
+        // every string variable through htmlentities() recursively except those
+        // marked 'noescape'.
 
+        if (!$this->escaped) {
+            self::escape_recursive($this->vars,$this->noescape);
+            $this->escaped = true;
+        }
+        if (!self::$defaultEscaped) {
+            self::escape_recursive(self::$defaultVars,self::$defaultNoescape);
+            self::$defaultEscaped = true;
+        }
+
+        // Make list of variables to extract using local, default and parent
+        // variable lists.
+
+        $vars = $this->vars + self::$defaultVars;
+        if (is_a($this->parent,'\TCCL\Templator\TemplateGenerator')) {
+            $vars += $this->parent->getEscapedVariables();
+        }
+
+        return $vars;
+    }
+
+    private function outputPage() {
         // Extract variables into the scope of this method call. Then include
         // the template source code to generate output.
-        extract($vars);
+
+        extract($this->getEscapedVariables());
         include $this->basePage;
     }
 }

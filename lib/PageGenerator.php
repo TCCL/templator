@@ -10,6 +10,8 @@
 
 namespace TCCL\Templator;
 
+use Exception;
+
 /**
  * PageGenerator
  *
@@ -66,6 +68,10 @@ class PageGenerator extends TemplateGenerator {
 
         // Add a reference to ourself called "basePage".
         $this->addVariable('basePage',$this);
+
+        if ($preeval) {
+            $this->evaluate();
+        }
     }
 
     /**
@@ -150,6 +156,13 @@ class PageGenerator extends TemplateGenerator {
             $filePath = self::$cache->convertToCache($filePath,'css');
         }
         echo "<link rel=\"stylesheet\" href=\"$filePath\" />\n";
+    }
+
+    /**
+     * Overrides TemplateGenerator::inherit().
+     */
+    public function inherit(Templator $tpl) {
+        throw new Exception("A PageGenerator instance cannot be used as a child Templator");
     }
 
     /**
