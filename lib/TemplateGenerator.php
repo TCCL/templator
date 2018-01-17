@@ -79,12 +79,26 @@ class TemplateGenerator implements Templator {
     private $preeval;
 
     /**
+     * Determines if the templator is running in "dry-run" mode.
+     *
+     * @var bool
+     */
+    private $dryrun = false;
+
+    /**
      * An associative array of variables that are exported into every
      * TemplateGenerator instance.
      *
      * @var array
      */
     static private $defaultVars = array();
+
+    /**
+     * A list of default variables names that should not be escaped.
+     *
+     * @var array
+     */
+    static private $defaultNoescape = array();
 
     /**
      * Constructs a new templator instance
@@ -146,9 +160,15 @@ class TemplateGenerator implements Templator {
      *  The name for the variable
      * @param mixed $value
      *  The value for the variable
+     * @param bool $escape
+     *  If true, then the named variables will be escaped.
      */
-    static public function addDefaultVariable($name,$value) {
+    static public function addDefaultVariable($name,$value,$escape = true) {
         self::$defaultVars[$name] = $value;
+
+        if (!$escape) {
+            self::$defaultNoescape[$name] = true;
+        }
     }
 
     /**
@@ -157,8 +177,12 @@ class TemplateGenerator implements Templator {
      * @param array $vars
      *  An associative array of name/value pairs that represents the variables
      */
-    static public function addDefaultVariables(array $vars) {
+    static public function addDefaultVariables(array $vars,$escape = true) {
         self::$defaultVars += $vars;
+
+        if (!$escape) {
+            self::$defaultNoescape += array_fill_keys(array_keys($vars),true);
+        }
     }
 
     /**
@@ -166,12 +190,16 @@ class TemplateGenerator implements Templator {
      * template generator (i.e. Templator). The template must be completely
      * ready for generation since it is pre-evaluated.
      *
-     * @param string    $name
+     * @param string $name
      *  The name for the nested component
      * @param Templator $component
      *  The component object
+     * @param bool $dryrun
+     *  If true, then a dry-run is performed on the component after variables
+     *  have been inherited. This only works if the component is an instance of
+     *  type TemplateGenerator.
      */
-    public function addComponent($name,Templator $component) {
+    public function addComponent($name,Templator $component,$dryrun = false) {
         // Go ahead and evaluate the component. This is a depth-first evaluation
         // technique that ensures that a component is completely evaluated
         // before the context in which it is used is even considered. This is to
@@ -181,6 +209,9 @@ class TemplateGenerator implements Templator {
         $this->components[$name] = $component;
         $component->inherit($this);
         $component->evaluate();
+        if ($dryrun && is_a($component,'\TCCL\Templator\TemplateGenerator')) {
+            $component->dryrun();
+        }
     }
 
     /**
@@ -188,8 +219,8 @@ class TemplateGenerator implements Templator {
      * addComponent(). The content is written to the output stream. This
      * function should be called within template scripts to inject components.
      *
-     * @param  string $name
-     *  The name of the component to generate
+     * @param string $name
+     *  The name of the component to generate.
      */
     public function generateComponent($name) {
         if (!isset($this->components[$name])) {
@@ -207,7 +238,7 @@ class TemplateGenerator implements Templator {
      * @param bool $preeval
      *  Determines if the templator is configured to pre-evaluate its content.
      */
-    public function directComponent($basePage,$preeval = true) {
+    public function directComponent($basePage,$preeval = false) {
         $component = new TemplateGenerator($basePage,$preeval);
         $component->inherit($this);
         $component->generate();
@@ -242,6 +273,22 @@ class TemplateGenerator implements Templator {
      */
     public function clearCache() {
         unset($this->cache);
+    }
+
+    /**
+     * Executes the template in dry-run mode. In dry-run mode, the template
+     * script is loaded and executed but no variables are extracted. If you use
+     * dry-run, your scripts *should* check for $this->dryrun and exit with no
+     * output. A dry-run is like a preevaluation except no evaluation
+     * occurs. This is useful for configuring the backend specific to each
+     * template component.
+     */
+    public function dryrun() {
+        ob_start();
+        $this->dryrun = true;
+        include $this->basePage;
+        $this->dryrun = false;
+        ob_get_clean();
     }
 
     /**
@@ -301,7 +348,13 @@ class TemplateGenerator implements Templator {
             // Only escape variables that were not excluded or whose parent
             // variable was not excluded. In this way any variable that is
             // excluded has its children excluded as well.
-            $doescape = isset($escape) ? $escape : !isset($this->noescape[$name]);
+            if (!isset($escape)) {
+                $doescape = !isset($this->noescape[$name])
+                    && !isset(self::$defaultNoescape[$name]);
+            }
+            else {
+                $doescape = $escape;
+            }
 
             if (is_string($value) && $doescape) {
                 $value = htmlentities($value);

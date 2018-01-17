@@ -11,19 +11,21 @@
 namespace TCCL\Templator;
 
 /**
- * A specific template generator with convenience functions for generating a
- * top-level HTML page. This templator lets you add stylesheet and script
- * references to the template.
+ * PageGenerator
  *
- * References are specified in reverse order since nested scripts can
+ * A specific template generator with convenience functions for generating a
+ * top-level HTML page. This templator lets you add stylesheet and script paths
+ * to the template and will generate the appropriate references in the resulting
+ * markup. This templator adds a variable called 'basePage' to every
+ * templator. This is a reference to the PageGenerator object itself.
+ *
+ * CSS/JS references are generated in reverse order since nested scripts can
  * recursively add references that depend on references added in a base
  * template. This means independent references should be specified after
  * dependent ones.
  *
- * A cache configuration is provided for js/css files. This works by converting
- * files into a cached representation and storing them somewhere on disk. Each
- * cache file is represented by its unique content hash. An index file is used
- * to maintain mappings of resource to cached item.
+ * A ContentCache may be set on this templator, which is used for transforming
+ * CSS/JS files through a versioned cache layer.
  */
 class PageGenerator extends TemplateGenerator {
     /**
@@ -50,6 +52,21 @@ class PageGenerator extends TemplateGenerator {
      * @var array
      */
     private $js = array();
+
+    /**
+     * Constructs a new PageGenerator instance.
+     *
+     * @param string $basePage
+     *  The file path of the page template file
+     * @param bool $preeval
+     *  Determines if the templator is configured to pre-evaluate its content.
+     */
+    public function __construct($basePage,$preeval = false) {
+        parent::__construct($basePage,$preeval);
+
+        // Add a reference to ourself called "basePage".
+        $this->addVariable('basePage',$this);
+    }
 
     /**
      * Add a stylesheet to the generator's list of stylesheets. This just saves

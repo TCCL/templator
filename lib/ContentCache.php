@@ -13,6 +13,11 @@ namespace TCCL\Templator;
 
 use Exception;
 
+/**
+ * ContentCache
+ *
+ * A lightweight cache-busting and asset pipeline framework.
+ */
 class ContentCache {
     /**
      * Directory in which cache files are written.
@@ -88,6 +93,8 @@ class ContentCache {
      *  The file path to the cached version.
      */
     public function convertToCache($filePath,$type = '') {
+        // TODO: Implement cache buster/asset pipeline.
+
         return $filePath;
     }
 }
