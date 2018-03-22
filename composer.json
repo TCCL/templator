@@ -1,5 +1,14 @@
 {
     "name": "tccl/templator",
+    "description": "A simple HTML templating engine library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Roger Gee",
+            "email": "roger.gee@tulsalibrary.org"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "TCCL\\Templator\\": "lib"
