@@ -9,11 +9,11 @@
 namespace TCCL\Templator;
 
 /**
- * TemplateGenerator
- *
  * Represents a generic template generator that targets an arbitrary template
- * script. This templator provides variables, HTML entity escaping, evaluation
- * caching, output hooks and nested components.
+ * script.
+ *
+ * This templator provides variables, HTML entity escaping, evaluation caching,
+ * output hooks and nested components.
  */
 class TemplateGenerator implements Templator {
     /**

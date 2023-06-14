@@ -21,18 +21,8 @@ namespace TCCL\Templator;
  * recursively add references that depend on references added in a base
  * template. This means independent references should be specified after
  * dependent ones.
- *
- * A ContentCache may be set on this templator, which is used for transforming
- * CSS/JS files through a versioned cache layer.
  */
 class PageGenerator extends TemplateGenerator {
-    /**
-     * The ContentCache instance to use when caching js/css files.
-     *
-     * @var \TCCL\Templator\ContentCache
-     */
-    static private $cache = null;
-
     /**
      * An array of CSS stylesheets to add to the page. This array will be
      * reversed due to how the templates are evaluated. This is because we want
@@ -133,12 +123,7 @@ class PageGenerator extends TemplateGenerator {
      *  source.
      */
     public function js(string $filePath) : void {
-        if (is_object(self::$cache)) {
-            $src = self::$cache->convertToCache($filePath,'js');
-        }
-        else {
-            $src = $filePath;
-        }
+        $src = $filePath;
 
         echo "<script src=\"$src\"></script>\n";
     }
@@ -152,12 +137,7 @@ class PageGenerator extends TemplateGenerator {
      *  source.
      */
     public function css(string $filePath) : void {
-        if (is_object(self::$cache)) {
-            $href = self::$cache->convertToCache($filePath,'css');
-        }
-        else {
-            $href = $filePath;
-        }
+        $href = $filePath;
 
         echo "<link rel=\"stylesheet\" href=\"$href\" />\n";
     }
@@ -169,17 +149,5 @@ class PageGenerator extends TemplateGenerator {
         throw new \Exception(
             "A PageGenerator instance cannot be used as a child Templator"
         );
-    }
-
-    /**
-     * Sets the cache policy for all PageGenerator instances.
-     *
-     * @see \TCCL\Templator\ContentCache::__construct for full documentation.
-     */
-    static public function setCachePolicy(string $cacheDir,
-                                          string $contentDir = '',
-                                          ?array $hooks = null)
-    {
-        self::$cache = new ContentCache($cacheDir,$contentDir,$hooks);
     }
 }
