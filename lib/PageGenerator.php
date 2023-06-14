@@ -3,23 +3,19 @@
 /**
  * PageGenerator.php
  *
- * This file is a part of tccl/templator.
- *
- * @package tccl/templator
+ * @package tccl\templator
  */
 
 namespace TCCL\Templator;
 
-use Exception;
-
 /**
- * PageGenerator
- *
  * A specific template generator with convenience functions for generating a
- * top-level HTML page. This templator lets you add stylesheet and script paths
- * to the template and will generate the appropriate references in the resulting
- * markup. This templator adds a variable called 'basePage' to every
- * templator. This is a reference to the PageGenerator object itself.
+ * top-level HTML page.
+ *
+ * This templator lets you add stylesheet and script paths to the template and
+ * will generate the appropriate references in the resulting markup. This
+ * templator adds a variable called 'basePage' to every templator. This is a
+ * reference to the PageGenerator object itself.
  *
  * CSS/JS references are generated in reverse order since nested scripts can
  * recursively add references that depend on references added in a base
@@ -33,7 +29,7 @@ class PageGenerator extends TemplateGenerator {
     /**
      * The ContentCache instance to use when caching js/css files.
      *
-     * @var \Templator\ContentCache
+     * @var \TCCL\Templator\ContentCache
      */
     static private $cache = null;
 
@@ -44,7 +40,7 @@ class PageGenerator extends TemplateGenerator {
      *
      * @var array
      */
-    private $css = array();
+    private $css = [];
 
     /**
      * An array of JavaScript files to add to the page. This array will be
@@ -53,7 +49,7 @@ class PageGenerator extends TemplateGenerator {
      *
      * @var array
      */
-    private $js = array();
+    private $js = [];
 
     /**
      * Constructs a new PageGenerator instance.
@@ -63,7 +59,7 @@ class PageGenerator extends TemplateGenerator {
      * @param bool $preeval
      *  Determines if the templator is configured to pre-evaluate its content.
      */
-    public function __construct($basePage,$preeval = false) {
+    public function __construct(string $basePage,bool $preeval = false) {
         parent::__construct($basePage,$preeval);
 
         // Add a reference to ourself called "basePage".
@@ -81,14 +77,14 @@ class PageGenerator extends TemplateGenerator {
      * @param string $filePath
      *  The path to the CSS file
      */
-    public function addStylesheet($filePath) {
+    public function addStylesheet(string $filePath) : void {
         $this->css[] = $filePath;
     }
 
     /**
      * Alias for PageGenerator::addStylesheet().
      */
-    public function addCSS($filePath) {
+    public function addCSS(string $filePath) : void {
         $this->css[] = $filePath;
     }
 
@@ -99,14 +95,14 @@ class PageGenerator extends TemplateGenerator {
      * @param string $filePath
      *  The path to the JavaScript file
      */
-    public function addJavaScript($filePath) {
+    public function addJavaScript(string $filePath) : void {
         $this->js[] = $filePath;
     }
 
     /**
      * Writes the stored CSS references in-place to the output stream.
      */
-    public function generateCSS() {
+    public function generateCSS() : void {
         foreach (array_reverse($this->css) as $filePath) {
             $this->css($filePath);
         }
@@ -115,14 +111,14 @@ class PageGenerator extends TemplateGenerator {
     /**
      * Alias for PageGenerator::generateCSS().
      */
-    public function generateStylesheets() {
+    public function generateStylesheets() : void {
         $this->generateCSS();
     }
 
     /**
      * Writes the stored JS references in-place to the output stream.
      */
-    public function generateJavaScript() {
+    public function generateJavaScript() : void {
         foreach (array_reverse($this->js) as $filePath) {
             $this->js($filePath);
         }
@@ -136,11 +132,15 @@ class PageGenerator extends TemplateGenerator {
      *  The reference as it will be presented to the user-agent in the HTML
      *  source.
      */
-    public function js($filePath) {
+    public function js(string $filePath) : void {
         if (is_object(self::$cache)) {
-            $filePath = self::$cache->convertToCache($filePath,'js');
+            $src = self::$cache->convertToCache($filePath,'js');
         }
-        echo "<script src=\"$filePath\"></script>\n";
+        else {
+            $src = $filePath;
+        }
+
+        echo "<script src=\"$src\"></script>\n";
     }
 
     /**
@@ -151,26 +151,35 @@ class PageGenerator extends TemplateGenerator {
      *  The reference as it will be presented to the user-agent in the HTML
      *  source.
      */
-    public function css($filePath) {
+    public function css(string $filePath) : void {
         if (is_object(self::$cache)) {
-            $filePath = self::$cache->convertToCache($filePath,'css');
+            $href = self::$cache->convertToCache($filePath,'css');
         }
-        echo "<link rel=\"stylesheet\" href=\"$filePath\" />\n";
+        else {
+            $href = $filePath;
+        }
+
+        echo "<link rel=\"stylesheet\" href=\"$href\" />\n";
     }
 
     /**
      * Overrides TemplateGenerator::inherit().
      */
-    public function inherit(Templator $tpl) {
-        throw new Exception("A PageGenerator instance cannot be used as a child Templator");
+    public function inherit(Templator $parent) : void {
+        throw new \Exception(
+            "A PageGenerator instance cannot be used as a child Templator"
+        );
     }
 
     /**
      * Sets the cache policy for all PageGenerator instances.
      *
-     * See \Templator\ContentCache::__construct for full documentation.
+     * @see \TCCL\Templator\ContentCache::__construct for full documentation.
      */
-    static public function setCachePolicy($cacheDir,$contentDir = '',$hooks = null) {
+    static public function setCachePolicy(string $cacheDir,
+                                          string $contentDir = '',
+                                          ?array $hooks = null)
+    {
         self::$cache = new ContentCache($cacheDir,$contentDir,$hooks);
     }
 }

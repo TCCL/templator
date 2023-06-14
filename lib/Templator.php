@@ -3,9 +3,7 @@
 /**
  * Templator.php
  *
- * This library provides a simple HTML template generator.
- *
- * @package tccl/templator
+ * @package tccl\templator
  */
 
 namespace TCCL\Templator;
@@ -19,18 +17,21 @@ interface Templator {
      *
      * @return string
      */
-    public function evaluate();
+    public function evaluate() : string;
 
     /**
      * Writes the evaluate content to the output stream (this does what
      * evaluate() does except it echos it to the output stream instead of
      * returning it).
      */
-    public function generate();
+    public function generate() : void;
 
     /**
      * Allow child templates to perform tasks with awareness of their parent
      * templators.
+     *
+     * @param TCCL\Templator\Templator $parent
+     *  The parent templator instance.
      */
-    public function inherit(Templator $parent);
+    public function inherit(Templator $parent) : void;
 }

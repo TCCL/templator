@@ -1,0 +1,6 @@
+#
+# .gitignore - tccl/templator
+#
+
+composer.lock
+vendor/
